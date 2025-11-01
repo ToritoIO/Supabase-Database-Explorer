@@ -1,0 +1,86 @@
+{
+  "manifest_version": 3,
+  "name": "Supabase Database Explorer",
+  "description": "Detect and Explore Supabase tables directly from a Chrome side panel.",
+  "version": "0.1.7",
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "32": "assets/icons/icon32.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Open Supabase Database Explorer",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "32": "assets/icons/icon32.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "tabs",
+    "scripting",
+    "webRequest"
+  ],
+  "host_permissions": [
+    "https://*.supabase.co/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content/detector.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content/bubble.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "explorer/explorer.html",
+        "explorer/explorer.js",
+        "panel/styles.css",
+        "content/detector_inject.js",
+        "panel/supabase-database-explorer.svg",
+        "report/report.html",
+        "report/report.js",
+        "report/report.css"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "devtools_page": "devtools/devtools.html",
+  "side_panel": {
+    "default_path": "panel/sidepanel.html"
+  }
+}

@@ -1,0 +1,343 @@
+.report-body {
+  margin: 0;
+  padding: 32px 0 48px;
+  min-height: 100vh;
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #0f172a;
+  --bg: #ffffff;
+  --fg: #0f172a;
+  --card-bg: #ffffff;
+  --border: rgba(15, 23, 42, 0.12);
+  --muted-text: #475569;
+  --status-bg: rgba(148, 163, 184, 0.16);
+  --gradient-bg: #ffffff;
+  --card-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --table-header-bg: rgba(241, 245, 249, 0.9);
+  --accent: #1e73be;
+  --accent-dark: #14518a;
+}
+
+.page-header {
+  max-width: 900px;
+  margin: 0 auto 16px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-header-logo {
+  width: 40px;
+  height: 40px;
+}
+
+.page-header-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.report-container {
+  max-width: 900px;
+  margin: 0 auto;
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.report-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+  align-items: flex-start;
+}
+
+.report-meta {
+  font-size: 0.9rem;
+  color: var(--muted-text);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.download-btn {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #ffffff;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(30, 115, 190, 0.25);
+  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.download-btn:hover:not(:disabled) {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+.download-btn:focus {
+  outline: 2px solid rgba(30, 115, 190, 0.35);
+  outline-offset: 2px;
+}
+
+.download-btn:active {
+  transform: translateY(0);
+}
+
+.download-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+
+.download-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.report-root {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.report-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--card-shadow);
+}
+
+.report-section h2 {
+  margin-bottom: 12px;
+  font-size: 1.15rem;
+}
+
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(148, 163, 184, 0.2);
+  color: var(--fg);
+}
+
+.risk-badge[data-level="critical"] {
+  background: rgba(239, 68, 68, 0.2);
+  color: #b01d1d;
+}
+
+.risk-badge[data-level="high"] {
+  background: rgba(249, 115, 22, 0.2);
+  color: #fdba74;
+}
+
+.risk-badge[data-level="medium"] {
+  background: rgba(250, 204, 21, 0.2);
+  color: #aa8a08;
+}
+
+.risk-badge[data-level="low"] {
+  background: rgba(34, 197, 94, 0.2);
+  color: #0b692c;
+}
+
+.key-findings {
+  margin: 12px 0 0;
+  padding-left: 20px;
+  color: var(--fg);
+}
+
+.key-findings li {
+  margin-bottom: 6px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.summary-card {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summary-card span {
+  font-size: 0.85rem;
+  color: var(--muted-text);
+}
+
+.summary-card strong {
+  font-size: 1.4rem;
+}
+
+.findings-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.findings-table thead {
+  background: var(--table-header-bg);
+}
+
+.findings-table th,
+.findings-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+  font-size: 0.9rem;
+}
+
+.findings-table tbody tr:nth-child(odd) {
+  background: #f8fafc;
+}
+
+.finding-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.finding-tag {
+  background: rgba(148, 163, 184, 0.2);
+  color: var(--muted-text);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+}
+
+.finding-status[data-state="likely-unprotected"] {
+  color: #b01d1d;
+}
+
+.finding-status[data-state="protected"] {
+  color: #86efac;
+}
+
+.finding-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.85rem;
+  color: var(--fg);
+}
+
+.finding-list li {
+  margin-bottom: 4px;
+}
+
+.recommendations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recommendation-card {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recommendation-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.recommendation-severity {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  align-self: flex-start;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.recommendation-severity[data-severity="critical"] {
+  background: rgba(239, 68, 68, 0.2);
+  color: #b01d1d;
+}
+
+.recommendation-severity[data-severity="high"] {
+  background: rgba(249, 115, 22, 0.2);
+  color: #c16402;
+}
+
+.recommendation-severity[data-severity="medium"] {
+  background: rgba(250, 204, 21, 0.2);
+  color: #fde68a;
+}
+
+.recommendation-severity[data-severity="low"] {
+  background: rgba(59, 130, 246, 0.2);
+  color: #bfdbfe;
+}
+
+.report-footer {
+  margin-top: 32px;
+  font-size: 0.8rem;
+  color: var(--muted-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.report-footer-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+@media (max-width: 768px) {
+  .report-body {
+    padding: 16px;
+  }
+
+  .download-btn {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+@media print {
+  .download-btn {
+    display: none !important;
+  }
+}

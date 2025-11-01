@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Supabase Database Explorer Modal</title>
+    <link rel="stylesheet" href="../panel/styles.css" />
+  </head>
+  <body class="explorer-body">
+    <div class="modal-content explorer-window">
+      <header class="modal-header">
+        <div>
+          <h2>Table Explorer</h2>
+          <p class="subtitle"><span id="modal-table-name">—</span></p>
+        </div>
+        <button id="close-modal-btn" class="icon-btn" aria-label="Close explorer">×</button>
+      </header>
+
+      <nav class="tab-bar">
+        <button data-tab="browse" class="tab-btn active">Browse</button>
+        <button data-tab="insert" class="tab-btn">Insert</button>
+        <button data-tab="update" class="tab-btn">Update</button>
+        <button data-tab="delete" class="tab-btn">Delete</button>
+      </nav>
+
+      <section id="tab-browse" class="tab-panel active">
+        <form id="browse-form" class="browse-form">
+          <div class="browse-layout">
+            <div class="browse-columns">
+              <label>
+                <span>Columns</span>
+                <select id="browse-columns" multiple size="8"></select>
+              </label>
+            </div>
+            <div class="browse-controls">
+              <div class="control-grid">
+                <label>
+                  <span>Page size</span>
+                  <input id="browse-limit" type="number" min="1" max="1000" value="100" />
+                </label>
+                <label>
+                  <span>Page</span>
+                  <input id="browse-page" type="number" min="1" value="1" />
+                </label>
+                <label>
+                  <span>Order by</span>
+                  <select id="browse-order-column"></select>
+                </label>
+                <label>
+                  <span>Direction</span>
+                  <select id="browse-order-direction">
+                    <option value="asc">asc</option>
+                    <option value="desc">desc</option>
+                  </select>
+                </label>
+              </div>
+              <fieldset class="filter-group">
+                <legend>Filter</legend>
+                <div class="filter-grid">
+                  <label>
+                    <span>Column</span>
+                    <select id="browse-filter-column"></select>
+                  </label>
+                  <label>
+                    <span>Operator</span>
+                    <select id="browse-filter-operator">
+                      <option value="eq">eq</option>
+                      <option value="neq">neq</option>
+                      <option value="gt">gt</option>
+                      <option value="gte">gte</option>
+                      <option value="lt">lt</option>
+                      <option value="lte">lte</option>
+                      <option value="like">like</option>
+                      <option value="ilike">ilike</option>
+                      <option value="is">is</option>
+                      <option value="in">in</option>
+                      <option value="cs">cs</option>
+                      <option value="cd">cd</option>
+                    </select>
+                  </label>
+                  <label class="filter-value">
+                    <span>Value</span>
+                    <input id="browse-filter-value" type="text" placeholder="Enter filter value" />
+                  </label>
+                </div>
+              </fieldset>
+            </div>
+          </div>
+          <div class="form-footer">
+            <button type="submit" class="primary">Run query</button>
+            <span id="browse-count"></span>
+          </div>
+        </form>
+        <div id="browse-results" class="results"></div>
+      </section>
+
+      <section id="tab-insert" class="tab-panel">
+        <form id="insert-form" class="column-form">
+          <div id="insert-fields" class="dynamic-fields"></div>
+          <div class="form-footer">
+            <button type="submit" class="primary">Insert row</button>
+          </div>
+        </form>
+        <div id="insert-feedback" class="feedback"></div>
+      </section>
+
+      <section id="tab-update" class="tab-panel">
+        <form id="update-form" class="column-form">
+          <fieldset>
+            <legend>Filter</legend>
+            <div class="grid-form">
+              <label>
+                Column
+                <select id="update-filter-column"></select>
+              </label>
+              <label>
+                Operator
+                <select id="update-filter-operator">
+                  <option value="eq">eq</option>
+                  <option value="neq">neq</option>
+                  <option value="gt">gt</option>
+                  <option value="gte">gte</option>
+                  <option value="lt">lt</option>
+                  <option value="lte">lte</option>
+                  <option value="like">like</option>
+                  <option value="ilike">ilike</option>
+                </select>
+              </label>
+              <label>
+                Value
+                <input id="update-filter-value" type="text" />
+              </label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>New values</legend>
+            <div id="update-fields" class="dynamic-fields"></div>
+          </fieldset>
+          <div class="form-footer">
+            <button type="submit" class="primary">Update rows</button>
+          </div>
+        </form>
+        <div id="update-feedback" class="feedback"></div>
+      </section>
+
+      <section id="tab-delete" class="tab-panel">
+        <form id="delete-form" class="column-form">
+          <p class="danger">⚠️ Deleting rows cannot be undone.</p>
+          <div class="grid-form">
+            <label>
+              Column
+              <select id="delete-filter-column"></select>
+            </label>
+            <label>
+              Operator
+              <select id="delete-filter-operator">
+                <option value="eq">eq</option>
+                <option value="neq">neq</option>
+                <option value="gt">gt</option>
+                <option value="gte">gte</option>
+                <option value="lt">lt</option>
+                <option value="lte">lte</option>
+                <option value="like">like</option>
+                <option value="ilike">ilike</option>
+              </select>
+            </label>
+            <label>
+              Value
+              <input id="delete-filter-value" type="text" />
+            </label>
+          </div>
+          <div class="form-footer">
+            <button type="submit" class="danger">Delete rows</button>
+          </div>
+        </form>
+        <div id="delete-feedback" class="feedback"></div>
+      </section>
+
+      <footer class="modal-footer">
+        <div id="modal-status" class="status status-idle">Loading…</div>
+      </footer>
+    </div>
+
+    <script type="module" src="explorer.js"></script>
+  </body>
+</html>

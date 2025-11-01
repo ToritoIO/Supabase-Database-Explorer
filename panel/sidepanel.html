@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Supabase Database Explorer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="header-main">
+        <img src="supabase-database-explorer.svg" alt="Supabase Database Explorer logo" class="app-logo" />
+        <h1>Supabase Database Explorer</h1>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+          <span class="theme-icon" data-theme="dark">
+            <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+              <rect width="256" height="256" fill="none" />
+              <line x1="128" y1="40" x2="128" y2="16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+              <circle cx="128" cy="128" r="56" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+              <line x1="64" y1="64" x2="48" y2="48" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+              <line x1="64" y1="192" x2="48" y2="208" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+              <line x1="192" y1="64" x2="208" y2="48" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+              <line x1="192" y1="192" x2="208" y2="208" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+              <line x1="40" y1="128" x2="16" y2="128" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+              <line x1="128" y1="216" x2="128" y2="240" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+              <line x1="216" y1="128" x2="240" y2="128" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+            </svg>
+            <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+              <rect width="256" height="256" fill="none" />
+              <path d="M108.11,28.11A96.09,96.09,0,0,0,227.89,147.89,96,96,0,1,1,108.11,28.11Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+            </svg>
+          </span>
+        </button>
+      </div>
+      <div id="connection-status" class="status status-idle">Idle</div>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Connection</h2>
+        <form id="connection-form">
+          <label class="input-group">
+            <span>Supabase Project ID</span>
+            <input id="project-id" type="text" placeholder="xgukkzjwudbxyiohspsv" autocomplete="off" />
+          </label>
+
+          <label class="input-group">
+            <span>Schema (Accept-Profile)</span>
+            <input id="schema" type="text" placeholder="public" value="public" />
+          </label>
+
+          <label class="input-group">
+            <span>apiKey</span>
+            <input id="api-key" type="password" placeholder="Anon/service key" autocomplete="off" />
+          </label>
+
+          <label class="input-group">
+            <span>Bearer token</span>
+            <input id="bearer" type="password" placeholder="Defaults to apiKey when empty" autocomplete="off" />
+          </label>
+
+          <div class="form-actions">
+            <button id="connect-btn" type="submit" class="primary">Connect / Refresh</button>
+            <button id="clear-storage-btn" type="button">Clear Saved</button>
+          </div>
+        </form>
+        <div class="hint">
+          Tip: Use anon key for read-only tables. Keep service_role keys out of shared environments.
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <h2>Tables / Views</h2>
+          <div class="header-actions">
+            <button id="report-btn" type="button" class="primary">Generate Security Report</button>
+            <button id="reload-btn" type="button">Reload</button>
+          </div>
+        </div>
+        <div class="tables-container">
+          <table class="tables-grid">
+            <thead>
+              <tr>
+                <th scope="col">Table</th>
+                <th scope="col">Rows</th>
+              </tr>
+            </thead>
+            <tbody id="tables-list">
+              <tr class="tables-empty">
+                <td colspan="2">Connect to populate tables.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint">Double-click a table to open it. Reload to refresh schema and counts.</p>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <a class="torito-link" href="https://torito.io" target="_blank" rel="noopener noreferrer">
+        <img src="https://torito.io/torito.svg" alt="Torito" class="torito-logo" />
+        <span>Torito - Security &amp; Privacy Tools</span>
+      </a>
+    </footer>
+
+    <script type="module" src="sidepanel.js"></script>
+  </body>
+</html>
