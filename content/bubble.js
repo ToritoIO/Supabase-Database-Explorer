@@ -36,7 +36,7 @@
 
     const icon = document.createElement("img");
     icon.src = chrome.runtime.getURL("panel/supabase-database-explorer.svg");
-    icon.alt = "Open Supabase Database Explorer";
+    icon.alt = "Open SupaExplorer";
     icon.style.width = "28px";
     icon.style.height = "28px";
     icon.style.pointerEvents = "none";
@@ -84,7 +84,7 @@
     message.style.pointerEvents = "none";
     message.style.transition = "opacity 0.25s ease";
     message.style.zIndex = "2147483644";
-    message.textContent = "Supabase detected. Click the Supabase Database Explorer extension icon in the toolbar to open the side panel.";
+    message.textContent = "Supabase detected. Click the SupaExplorer extension icon in the toolbar to open the side panel.";
 
     document.documentElement.appendChild(message);
     return message;

@@ -1,5 +1,5 @@
 chrome.devtools.panels.create(
-  "Supabase Database Explorer",
+  "SupaExplorer",
   "",
   "devtools/devtools_panel.html",
   () => {
