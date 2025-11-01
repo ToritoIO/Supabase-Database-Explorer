@@ -1,7 +1,7 @@
 # 𓎩 SupaExplorer
 ## Supabase Database Explorer Chrome Extension
 
-SupaExplorer helps security reviewers, red-teamers, and Supabase builders discover how an application talks to Supabase without leaving the page they are testing.
+SupaExplorer enables security reviewers, red-teamers, and developers to inspect a web application's Supabase traffic without leaving the page under test.
 
 ## Architecture Diagram
 
