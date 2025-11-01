@@ -504,9 +504,9 @@ async function refreshTableCounts() {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error || "Row count failed.");
       const suppressLog = /401/.test(message) || /permission denied/i.test(message);
-      if (!suppressLog) {
+      /*if (!suppressLog) {
         console.warn(`Failed to count rows for ${table}`, error);
-      }
+      }*/
       state.tableCounts[table] = null;
       state.tableCountErrors[table] = { message };
     }

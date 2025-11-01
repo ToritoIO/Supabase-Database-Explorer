@@ -44,6 +44,7 @@ Click on the image to watch the video on YouTube.
 
 ## Core Capabilities
 - Detects Supabase traffic by instrumenting `fetch`, `XMLHttpRequest`, and `chrome.webRequest`, then caches the live project ID, schema, and API keys it sees.
+- While the DevTools panel is open, scans captured script/JSON responses for embedded Supabase URLs and JWT API keys—even if no request has fired yet.
 - Ships a Chrome side panel for browsing tables, checking row counts, and spotting RLS denial responses with at-a-glance status.
 - Provides an in-page explorer overlay for quick select/insert/update/delete experiments that reuse the exact headers the page sent.
 - Adds a DevTools panel that lists recent Supabase requests and lets you push captured credentials straight into the side panel.
@@ -61,7 +62,7 @@ When a page makes a Supabase call, the background service worker normalizes the 
 **Detection bubble.** The bubble appears when Supabase traffic is captured; click it or the toolbar icon to open the side panel.  
 **Side panel.** Review the auto-filled connection, switch schemas, and browse tables. Row counts surface 401/permission-denied responses so you can pinpoint RLS gaps quickly. Click **Generate Security Report** to compile a printable summary with RLS findings and recommendations.  
 **Explorer overlay.** Double-click a table (or press “Open Explorer”) to bring up the overlay. Tabs cover browsing, inserting, updating, and deleting, and column pickers are pre-populated from OpenAPI plus inferred results.  
-**DevTools bridge.** Open the “SupaExplorer” DevTools panel while inspecting a tab to watch Supabase requests stream in. Filter for auth headers and push any captured credentials to the side panel with one click.  
+**DevTools bridge.** Open the “SupaExplorer” DevTools panel while inspecting a tab to watch Supabase requests stream in. It also scans script/JSON responses for hard-coded Supabase credentials, so preloaded bundles (like Next.js chunks) surface instantly. Filter for auth headers and push any captured credentials to the side panel with one click.  
 **Resetting state.** Use the “Clear stored credentials” button in the side panel or simply navigate away; the background worker clears detections per tab and drops the cached connection when keys disappear.
 
 ## Development Notes
