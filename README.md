@@ -4,6 +4,34 @@
 SupaExplorer helps security reviewers, red-teamers, and Supabase builders discover how an application talks to Supabase without leaving the page they are testing.
 
 ## Architecture Diagram
+
+```mermaid
+flowchart TD
+    A0["SupaExplorer Core (Background Service Worker)
+"]
+    A1["Supabase Request Detection
+"]
+    A2["Connection & State Management
+"]
+    A3["Side Panel UI (Connection & Table Browser)
+"]
+    A4["In-Page Explorer Overlay
+"]
+    A5["DevTools Integration
+"]
+    A6["Security Report Generation
+"]
+    A1 -- "Reports detected requests" --> A0
+    A0 -- "Manages connection state" --> A2
+    A5 -- "Sends credentials to" --> A0
+    A2 -- "Provides connection details to" --> A3
+    A2 -- "Provides credentials to" --> A4
+    A3 -- "Initiates report generation" --> A6
+    A0 -- "Launches" --> A4
+    A0 -- "Opens" --> A3
+    A2 -- "Stores report data for" --> A6
+```
+
 Review the end-to-end flow in the [architecture diagram](./architecture-diagram.md).
 
 ## Demo Video
