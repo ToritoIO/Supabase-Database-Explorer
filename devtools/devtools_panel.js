@@ -7,6 +7,11 @@ const STATIC_SCAN_MIME_HINTS = ["javascript", "json", "text"];
 const SUPABASE_URL_REGEX = /https:\/\/([a-z0-9-]+)\.supabase\.co/gi;
 const SUPABASE_KEY_REGEX = /['"](?<token>ey[A-Za-z0-9\-_]{20,}\.[A-Za-z0-9\-_]{20,}\.[A-Za-z0-9\-_]{20,})['"]/g;
 
+const TAB_CONFIG = [
+  { key: "requests", label: "Requests" },
+  { key: "assets", label: "Assets" },
+];
+
 const dom = {
   status: document.getElementById("status"),
   list: document.getElementById("request-list"),
@@ -14,12 +19,29 @@ const dom = {
   template: document.getElementById("request-template"),
   openSidePanelBtn: document.getElementById("open-sidepanel-btn"),
   authFilterCheckbox: document.getElementById("auth-filter-checkbox"),
+  tabButtons: {},
 };
 
 const state = {
   requests: [],
   showOnlyAuth: true,
+  activeTab: "requests",
 };
+
+TAB_CONFIG.forEach(({ key }) => {
+  const button = document.querySelector(`.tab-btn[data-tab="${key}"]`);
+  if (!button) {
+    return;
+  }
+  dom.tabButtons[key] = button;
+  button.addEventListener("click", () => {
+    if (state.activeTab === key) {
+      return;
+    }
+    state.activeTab = key;
+    renderRequests();
+  });
+});
 
 const staticDetectionCache = new Set();
 
@@ -324,6 +346,7 @@ function handleStaticDetection(request, detection) {
   if (state.requests.length > MAX_REQUESTS) {
     state.requests.length = MAX_REQUESTS;
   }
+  focusTabForEntry(entry);
   renderRequests();
   notifySupabaseDetection(detection);
 }
@@ -383,9 +406,24 @@ function notifySupabaseDetection(detection) {
   }
 }
 
+function focusTabForEntry(entry) {
+  if (!entry) {
+    return;
+  }
+  if (state.showOnlyAuth && !entry.hasAuthHeaders && !entry.isStaticDetection) {
+    // Entry will be hidden; keep current tab.
+    return;
+  }
+  const targetTab = entry.isStaticDetection ? "assets" : "requests";
+  if (state.activeTab !== targetTab) {
+    state.activeTab = targetTab;
+  }
+}
+
 function renderRequests() {
   dom.list.innerHTML = "";
   if (!state.requests.length) {
+    updateTabs({ requests: [], assets: [] });
     setStatus("Requests will appear as the inspected page talks to Supabase.");
     return;
   }
@@ -393,6 +431,10 @@ function renderRequests() {
   const visible = state.requests.filter((entry) => !state.showOnlyAuth || entry.hasAuthHeaders);
 
   if (!visible.length) {
+    updateTabs({
+      requests: [],
+      assets: [],
+    });
     const empty = document.createElement("div");
     empty.className = "empty-state";
     empty.textContent = "No requests match the current filter.";
@@ -409,55 +451,97 @@ function renderRequests() {
     setStatus(`${visible.length} ${descriptor} captured this session.`);
   }
 
-  visible.forEach((entry) => {
-    const fragment = dom.template.content.cloneNode(true);
-    const card = fragment.querySelector(".request-card");
-    const methodEl = fragment.querySelector(".request-method");
-    const urlEl = fragment.querySelector(".request-url");
-    const metaEl = fragment.querySelector(".request-meta");
-    const headerListEl = fragment.querySelector(".header-list");
-    const sendBtn = fragment.querySelector(".send-btn");
+  const grouped = {
+    requests: visible.filter((entry) => !entry.isStaticDetection),
+    assets: visible.filter((entry) => entry.isStaticDetection),
+  };
 
-    methodEl.textContent = entry.method;
-    urlEl.textContent = entry.url;
-    const statusDescriptor = entry.status
-      ? `${entry.status} ${entry.statusText}`.trim()
-      : entry.statusText || "No response status";
-    metaEl.textContent = [statusDescriptor || "No response status", `Initiator: ${entry.initiator}`].join(" • ");
-
-    const headersToDisplay = entry.isStaticDetection
-      ? entry.headers || []
-      : (entry.headers || []).filter((header) =>
-          INTERESTING_HEADERS.includes((header.name || "").toLowerCase())
-        );
-
-    if (headersToDisplay.length) {
-      headersToDisplay.forEach((header) => {
-        const row = document.createElement("div");
-        row.className = "header-row";
-        const nameEl = document.createElement("span");
-        nameEl.className = "header-name";
-        nameEl.textContent = header.name;
-        const valueEl = document.createElement("span");
-        valueEl.className = "header-value";
-        valueEl.textContent = header.value;
-        row.appendChild(nameEl);
-        row.appendChild(valueEl);
-        headerListEl.appendChild(row);
-      });
-    } else {
-      const empty = document.createElement("div");
-      empty.className = "header-row";
-      empty.textContent = entry.isStaticDetection
-        ? "No metadata captured."
-        : "No auth headers detected.";
-      headerListEl.appendChild(empty);
+  const activeHasRecords = grouped[state.activeTab]?.length > 0;
+  if (!activeHasRecords) {
+    const fallbackTab = TAB_CONFIG.find((tab) => grouped[tab.key]?.length);
+    if (fallbackTab) {
+      state.activeTab = fallbackTab.key;
     }
+  }
 
-    sendBtn.addEventListener("click", () => sendEntry(entry, card));
+  updateTabs(grouped);
 
-    dom.list.appendChild(fragment);
+  const activeEntries = grouped[state.activeTab] || [];
+  if (!activeEntries.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    const label = TAB_CONFIG.find((tab) => tab.key === state.activeTab)?.label || "Items";
+    empty.textContent = `No ${label.toLowerCase()} match the current filter.`;
+    dom.list.appendChild(empty);
+    return;
+  }
+
+  activeEntries.forEach((entry) => {
+    const cardFragment = createRequestCard(entry);
+    dom.list.appendChild(cardFragment);
   });
+}
+
+function updateTabs(groupedEntries) {
+  TAB_CONFIG.forEach(({ key, label }) => {
+    const button = dom.tabButtons[key];
+    if (!button) {
+      return;
+    }
+    const count = groupedEntries[key]?.length || 0;
+    button.textContent = `${label} (${count})`;
+    button.classList.toggle("active", state.activeTab === key);
+  });
+}
+
+function createRequestCard(entry) {
+  const fragment = dom.template.content.cloneNode(true);
+  const card = fragment.querySelector(".request-card");
+  const methodEl = fragment.querySelector(".request-method");
+  const urlEl = fragment.querySelector(".request-url");
+  const metaEl = fragment.querySelector(".request-meta");
+  const headerListEl = fragment.querySelector(".header-list");
+  const sendBtn = fragment.querySelector(".send-btn");
+
+  methodEl.textContent = entry.method;
+  urlEl.textContent = entry.url;
+  const statusDescriptor = entry.status
+    ? `${entry.status} ${entry.statusText}`.trim()
+    : entry.statusText || "No response status";
+  metaEl.textContent = [statusDescriptor || "No response status", `Initiator: ${entry.initiator}`].join(" • ");
+
+  const headersToDisplay = entry.isStaticDetection
+    ? entry.headers || []
+    : (entry.headers || []).filter((header) =>
+        INTERESTING_HEADERS.includes((header.name || "").toLowerCase())
+      );
+
+  if (headersToDisplay.length) {
+    headersToDisplay.forEach((header) => {
+      const row = document.createElement("div");
+      row.className = "header-row";
+      const nameEl = document.createElement("span");
+      nameEl.className = "header-name";
+      nameEl.textContent = header.name;
+      const valueEl = document.createElement("span");
+      valueEl.className = "header-value";
+      valueEl.textContent = header.value;
+      row.appendChild(nameEl);
+      row.appendChild(valueEl);
+      headerListEl.appendChild(row);
+    });
+  } else {
+    const empty = document.createElement("div");
+    empty.className = "header-row";
+    empty.textContent = entry.isStaticDetection
+      ? "No metadata captured."
+      : "No auth headers detected.";
+    headerListEl.appendChild(empty);
+  }
+
+  sendBtn.addEventListener("click", () => sendEntry(entry, card));
+
+  return fragment;
 }
 
 async function sendEntry(entry, card) {
@@ -501,6 +585,7 @@ function handleRequestFinished(request) {
     if (state.requests.length > MAX_REQUESTS) {
       state.requests.length = MAX_REQUESTS;
     }
+    focusTabForEntry(entry);
     renderRequests();
   }
 
