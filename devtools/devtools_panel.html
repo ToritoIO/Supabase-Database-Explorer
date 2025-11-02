@@ -52,11 +52,6 @@
         border-bottom: 1px solid rgba(148, 163, 184, 0.1);
         min-height: 20px;
       }
-      #request-list {
-        flex: 1;
-        overflow-y: auto;
-        padding: 0 16px 16px;
-      }
       .tab-bar {
         display: flex;
         gap: 8px;
@@ -84,12 +79,125 @@
         background: rgba(30, 115, 190, 0.35);
         box-shadow: 0 0 0 1px rgba(30, 115, 190, 0.3);
       }
+      #request-list {
+        width: 280px;
+        flex: 0 0 280px;
+        min-height: 0;
+        overflow-y: auto;
+        border-right: 1px solid rgba(148, 163, 184, 0.2);
+        background: rgba(15, 23, 42, 0.55);
+        padding: 8px 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .panel-layout {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+      }
+      #request-detail {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 16px 20px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .request-nav-item {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 12px 18px;
+        background: transparent;
+        border: none;
+        border-left: 3px solid transparent;
+        border-radius: 0;
+        color: #cbd5f5;
+        font-size: 12px;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      }
+      .request-nav-item:hover {
+        background: rgba(30, 64, 175, 0.18);
+        color: #e2e8f0;
+      }
+      .request-nav-item.active {
+        border-left-color: #38bdf8;
+        background: rgba(30, 64, 175, 0.28);
+        color: #ffffff;
+      }
+      .request-nav-item:focus-visible {
+        outline: 2px solid rgba(56, 189, 248, 0.8);
+        outline-offset: -2px;
+      }
+      .request-nav-item.request .nav-method {
+        color: #38bdf8;
+      }
+      .request-nav-item.asset .nav-method {
+        color: #fbbf24;
+      }
+      .nav-top {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: inherit;
+      }
+      .nav-method {
+        font-weight: 600;
+      }
+      .nav-status {
+        color: rgba(203, 213, 225, 0.8);
+        font-variant-numeric: tabular-nums;
+      }
+      .nav-url {
+        width: 100%;
+        font-family: "JetBrains Mono", "Fira Mono", "SFMono-Regular", monospace;
+        font-size: 11px;
+        color: #94a3b8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .nav-meta {
+        font-size: 11px;
+        color: rgba(148, 163, 184, 0.8);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .nav-empty {
+        padding: 24px 18px;
+        text-align: left;
+        color: #94a3b8;
+        font-size: 12px;
+      }
+      .detail-empty {
+        margin-top: 24px;
+        align-self: center;
+        max-width: 420px;
+        text-align: center;
+      }
       .request-card {
         border: 1px solid rgba(148, 163, 184, 0.2);
-        border-radius: 8px;
-        padding: 12px;
-        margin-top: 12px;
+        border-radius: 0;
+        padding: 16px;
+        margin: 0;
         background: rgba(15, 23, 42, 0.7);
+      }
+      .request-card.request {
+        border-left: 3px solid rgba(56, 189, 248, 0.6);
+      }
+      .request-card.asset {
+        border-left: 3px solid rgba(248, 180, 0, 0.6);
       }
       .request-card.sending {
         border-color: #38bdf8;
@@ -105,6 +213,9 @@
       .request-method {
         font-weight: 600;
         color: #38bdf8;
+      }
+      .request-card.asset .request-method {
+        color: #fbbf24;
       }
       .request-url {
         font-family: "JetBrains Mono", "Fira Mono", "SFMono-Regular", monospace;
@@ -181,7 +292,22 @@
       <button class="tab-btn active" type="button" data-tab="requests">Requests (0)</button>
       <button class="tab-btn" type="button" data-tab="assets">Assets (0)</button>
     </div>
-    <div id="request-list"></div>
+    <div class="panel-layout">
+      <aside id="request-list"></aside>
+      <section id="request-detail">
+        <div class="empty-state detail-empty">Select a request or asset to see its details.</div>
+      </section>
+    </div>
+    <template id="nav-item-template">
+      <button class="request-nav-item" type="button">
+        <div class="nav-top">
+          <span class="nav-method"></span>
+          <span class="nav-status"></span>
+        </div>
+        <div class="nav-url"></div>
+        <div class="nav-meta"></div>
+      </button>
+    </template>
     <template id="request-template">
       <div class="request-card">
         <div class="request-header">

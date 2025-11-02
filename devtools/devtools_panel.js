@@ -14,9 +14,11 @@ const TAB_CONFIG = [
 
 const dom = {
   status: document.getElementById("status"),
-  list: document.getElementById("request-list"),
+  nav: document.getElementById("request-list"),
+  detail: document.getElementById("request-detail"),
   clearBtn: document.getElementById("clear-btn"),
   template: document.getElementById("request-template"),
+  navTemplate: document.getElementById("nav-item-template"),
   openSidePanelBtn: document.getElementById("open-sidepanel-btn"),
   authFilterCheckbox: document.getElementById("auth-filter-checkbox"),
   tabButtons: {},
@@ -25,6 +27,8 @@ const dom = {
 const state = {
   requests: [],
   showOnlyAuth: true,
+  selectedId: null,
+  pendingScrollReset: false,
   activeTab: "requests",
 };
 
@@ -39,6 +43,7 @@ TAB_CONFIG.forEach(({ key }) => {
       return;
     }
     state.activeTab = key;
+    state.pendingScrollReset = true;
     renderRequests();
   });
 });
@@ -346,7 +351,7 @@ function handleStaticDetection(request, detection) {
   if (state.requests.length > MAX_REQUESTS) {
     state.requests.length = MAX_REQUESTS;
   }
-  focusTabForEntry(entry);
+  focusEntry(entry);
   renderRequests();
   notifySupabaseDetection(detection);
 }
@@ -406,7 +411,7 @@ function notifySupabaseDetection(detection) {
   }
 }
 
-function focusTabForEntry(entry) {
+function focusEntry(entry) {
   if (!entry) {
     return;
   }
@@ -415,71 +420,107 @@ function focusTabForEntry(entry) {
     return;
   }
   const targetTab = entry.isStaticDetection ? "assets" : "requests";
-  if (state.activeTab !== targetTab) {
-    state.activeTab = targetTab;
-  }
+  state.activeTab = targetTab;
+  state.selectedId = entry.id;
+  state.pendingScrollReset = true;
 }
 
 function renderRequests() {
-  dom.list.innerHTML = "";
-  if (!state.requests.length) {
-    updateTabs({ requests: [], assets: [] });
-    setStatus("Requests will appear as the inspected page talks to Supabase.");
-    return;
-  }
-
-  const visible = state.requests.filter((entry) => !state.showOnlyAuth || entry.hasAuthHeaders);
-
-  if (!visible.length) {
-    updateTabs({
-      requests: [],
-      assets: [],
-    });
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.textContent = "No requests match the current filter.";
-    dom.list.appendChild(empty);
-    setStatus("No requests match the current filter. Disable “Only auth headers” to see all traffic.");
-    return;
-  }
-
-  const descriptor = visible.length === 1 ? "request" : "requests";
-  const totalDescriptor = state.requests.length === 1 ? "request" : "requests";
-  if (state.showOnlyAuth) {
-    setStatus(`${visible.length} auth ${descriptor} shown (${state.requests.length} ${totalDescriptor} captured this session).`);
-  } else {
-    setStatus(`${visible.length} ${descriptor} captured this session.`);
-  }
-
+  const previousScroll = dom.nav.scrollTop;
+  let shouldResetScroll = state.pendingScrollReset;
+  state.pendingScrollReset = false;
+  dom.nav.innerHTML = "";
   const grouped = {
-    requests: visible.filter((entry) => !entry.isStaticDetection),
-    assets: visible.filter((entry) => entry.isStaticDetection),
+    requests: [],
+    assets: [],
   };
 
-  const activeHasRecords = grouped[state.activeTab]?.length > 0;
-  if (!activeHasRecords) {
-    const fallbackTab = TAB_CONFIG.find((tab) => grouped[tab.key]?.length);
-    if (fallbackTab) {
-      state.activeTab = fallbackTab.key;
-    }
+  if (!state.requests.length) {
+    updateTabs(grouped);
+    state.selectedId = null;
+    setStatus("Requests will appear as the inspected page talks to Supabase.");
+    renderNavigationPlaceholder("Requests will appear as the page talks to Supabase.");
+    renderDetailPlaceholder("Capture Supabase traffic to inspect connection details.");
+    dom.nav.scrollTop = 0;
+    return;
   }
 
+  const filtered = state.requests.filter((entry) => !state.showOnlyAuth || entry.hasAuthHeaders);
+  filtered.forEach((entry) => {
+    const bucket = entry.isStaticDetection ? "assets" : "requests";
+    grouped[bucket].push(entry);
+  });
   updateTabs(grouped);
 
-  const activeEntries = grouped[state.activeTab] || [];
-  if (!activeEntries.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    const label = TAB_CONFIG.find((tab) => tab.key === state.activeTab)?.label || "Items";
-    empty.textContent = `No ${label.toLowerCase()} match the current filter.`;
-    dom.list.appendChild(empty);
+  if (!filtered.length) {
+    state.selectedId = null;
+    const filterMessage = state.showOnlyAuth
+      ? "No items match the current filter. Disable “Only auth headers” to see all traffic."
+      : "No items captured yet.";
+    setStatus(filterMessage);
+    const activeLabel = state.activeTab === "assets" ? "assets" : "requests";
+    renderNavigationPlaceholder(`No ${activeLabel} match the current filter.`);
+    renderDetailPlaceholder("Adjust the filter to see matching requests or assets.");
+    dom.nav.scrollTop = 0;
     return;
+  }
+
+  const activeEntries = grouped[state.activeTab] || [];
+  const totalDescriptor = filtered.length === 1 ? "item" : "items";
+  const activeLabelSingular = state.activeTab === "assets" ? "asset" : "request";
+  const activeLabelPlural = state.activeTab === "assets" ? "assets" : "requests";
+  const activeDescriptor = activeEntries.length === 1 ? activeLabelSingular : activeLabelPlural;
+  const filterDescriptor = state.showOnlyAuth ? "with auth headers captured this session" : "captured this session";
+  setStatus(`${activeEntries.length} ${activeDescriptor} shown (${filtered.length} ${totalDescriptor} ${filterDescriptor}).`);
+
+  if (!activeEntries.length) {
+    state.selectedId = null;
+    const emptyLabel = activeLabelPlural;
+    renderNavigationPlaceholder(`No ${emptyLabel} captured in this tab.`);
+    renderDetailPlaceholder(`Switch tabs or adjust filters to inspect ${emptyLabel}.`);
+    dom.nav.scrollTop = shouldResetScroll ? 0 : previousScroll;
+    return;
+  }
+
+  if (!state.selectedId || !activeEntries.some((entry) => entry.id === state.selectedId)) {
+    state.selectedId = activeEntries[0]?.id || null;
+    shouldResetScroll = true;
   }
 
   activeEntries.forEach((entry) => {
-    const cardFragment = createRequestCard(entry);
-    dom.list.appendChild(cardFragment);
+    const fragment = createNavItem(entry, entry.id === state.selectedId);
+    dom.nav.appendChild(fragment);
   });
+
+  dom.nav.scrollTop = shouldResetScroll ? 0 : previousScroll;
+
+  const selectedEntry = activeEntries.find((entry) => entry.id === state.selectedId);
+  renderDetail(selectedEntry || null);
+}
+
+function renderNavigationPlaceholder(message) {
+  const empty = document.createElement("div");
+  empty.className = "empty-state nav-empty";
+  empty.textContent = message;
+  dom.nav.appendChild(empty);
+}
+
+function renderDetailPlaceholder(message) {
+  dom.detail.innerHTML = "";
+  const empty = document.createElement("div");
+  empty.className = "empty-state detail-empty";
+  empty.textContent = message;
+  dom.detail.appendChild(empty);
+}
+
+function renderDetail(entry) {
+  dom.detail.innerHTML = "";
+  if (!entry) {
+    renderDetailPlaceholder("Select a request or asset to view its headers and connection details.");
+    return;
+  }
+  const cardFragment = createRequestCard(entry);
+  dom.detail.appendChild(cardFragment);
 }
 
 function updateTabs(groupedEntries) {
@@ -494,6 +535,96 @@ function updateTabs(groupedEntries) {
   });
 }
 
+function createNavItem(entry, isActive) {
+  const fragment = dom.navTemplate?.content
+    ? dom.navTemplate.content.cloneNode(true)
+    : null;
+
+  let button;
+  if (fragment) {
+    button = fragment.querySelector(".request-nav-item");
+  } else {
+    button = document.createElement("button");
+    button.className = "request-nav-item";
+    button.innerHTML = `
+      <div class="nav-top">
+        <span class="nav-method"></span>
+        <span class="nav-status"></span>
+      </div>
+      <div class="nav-url"></div>
+      <div class="nav-meta"></div>
+    `;
+  }
+
+  const methodEl = button.querySelector(".nav-method");
+  const statusEl = button.querySelector(".nav-status");
+  const urlEl = button.querySelector(".nav-url");
+  const metaEl = button.querySelector(".nav-meta");
+
+  if (methodEl) {
+    methodEl.textContent = entry.method || "REQUEST";
+  }
+
+  if (statusEl) {
+    const statusLabel = entry.status
+      ? String(entry.status)
+      : entry.isStaticDetection
+        ? "KEY"
+        : "";
+    statusEl.textContent = statusLabel;
+  }
+
+  if (urlEl) {
+    urlEl.textContent = formatNavUrl(entry.url);
+    urlEl.title = entry.url || "";
+  }
+
+  if (metaEl) {
+    const metaParts = [];
+    if (entry.isStaticDetection) {
+      const supabaseHeader = (entry.headers || []).find((header) => header.name === "Supabase URL");
+      if (supabaseHeader?.value) {
+        metaParts.push(supabaseHeader.value);
+      }
+      metaParts.push(entry.statusText || "Embedded Supabase credential");
+    } else {
+      if (entry.statusText) {
+        metaParts.push(entry.statusText);
+      }
+      if (entry.initiator) {
+        metaParts.push(`Initiator: ${entry.initiator}`);
+      }
+    }
+    metaEl.textContent = metaParts.filter(Boolean).join(" • ");
+  }
+
+  button.classList.toggle("active", Boolean(isActive));
+  button.classList.toggle("asset", Boolean(entry.isStaticDetection));
+  button.classList.toggle("request", !entry.isStaticDetection);
+  button.addEventListener("click", () => {
+    if (state.selectedId === entry.id) {
+      return;
+    }
+    state.selectedId = entry.id;
+    renderRequests();
+  });
+
+  return fragment || button;
+}
+
+function formatNavUrl(url) {
+  if (!url) {
+    return "(no url)";
+  }
+  try {
+    const parsed = new URL(url);
+    const pathname = parsed.pathname === "/" ? "" : parsed.pathname;
+    return `${parsed.host}${pathname}`;
+  } catch (error) {
+    return url;
+  }
+}
+
 function createRequestCard(entry) {
   const fragment = dom.template.content.cloneNode(true);
   const card = fragment.querySelector(".request-card");
@@ -502,6 +633,9 @@ function createRequestCard(entry) {
   const metaEl = fragment.querySelector(".request-meta");
   const headerListEl = fragment.querySelector(".header-list");
   const sendBtn = fragment.querySelector(".send-btn");
+
+  card.classList.toggle("asset", Boolean(entry.isStaticDetection));
+  card.classList.toggle("request", !entry.isStaticDetection);
 
   methodEl.textContent = entry.method;
   urlEl.textContent = entry.url;
@@ -585,7 +719,7 @@ function handleRequestFinished(request) {
     if (state.requests.length > MAX_REQUESTS) {
       state.requests.length = MAX_REQUESTS;
     }
-    focusTabForEntry(entry);
+    focusEntry(entry);
     renderRequests();
   }
 
@@ -596,6 +730,9 @@ function handleRequestFinished(request) {
 
 dom.clearBtn.addEventListener("click", () => {
   state.requests = [];
+  state.selectedId = null;
+  state.activeTab = "requests";
+  state.pendingScrollReset = true;
   renderRequests();
 });
 
@@ -609,6 +746,7 @@ if (dom.authFilterCheckbox) {
   state.showOnlyAuth = Boolean(dom.authFilterCheckbox.checked);
   dom.authFilterCheckbox.addEventListener("change", () => {
     state.showOnlyAuth = Boolean(dom.authFilterCheckbox.checked);
+    state.pendingScrollReset = true;
     renderRequests();
   });
 }
