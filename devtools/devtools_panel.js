@@ -1,6 +1,7 @@
 const MAX_REQUESTS = 50;
 const INTERESTING_HEADERS = ["authorization", "apikey", "api-key", "x-client-info", "x-apikey"];
 const SUPABASE_DETECTION_MESSAGE = "SBDE_SUPABASE_REQUEST";
+const ASSET_DETECTION_RECORD_MESSAGE = "SBDE_REGISTER_ASSET_DETECTION";
 const STATIC_SCAN_MAX_BYTES = 1024 * 1024; // Guard asset scanning to 1MB payloads
 const STATIC_SCAN_CONTEXT_CHARS = 400;
 const STATIC_SCAN_MIME_HINTS = ["javascript", "json", "text"];
@@ -351,6 +352,7 @@ function handleStaticDetection(request, detection) {
   if (state.requests.length > MAX_REQUESTS) {
     state.requests.length = MAX_REQUESTS;
   }
+  recordAssetDetection(entry, detection);
   focusEntry(entry);
   renderRequests();
   notifySupabaseDetection(detection);
@@ -395,6 +397,11 @@ function createStaticEntry(request, detection) {
     tabId: chrome.devtools.inspectedWindow.tabId,
     hasAuthHeaders: true,
     isStaticDetection: true,
+    supabaseUrl: detection.supabaseUrl || "",
+    assetUrl,
+    keyType: detection.keyType || "",
+    keyLabel: detection.keyLabel || "",
+    apiKeySnippet: detection.apiKey ? summarizeApiKeySnippet(detection.apiKey) : "",
   };
 }
 
@@ -408,6 +415,46 @@ function notifySupabaseDetection(detection) {
     });
   } catch (error) {
     console.warn("SBDE failed to notify background of static detection", error);
+  }
+}
+
+function summarizeApiKeySnippet(apiKey) {
+  if (!apiKey || typeof apiKey !== "string") {
+    return "";
+  }
+  const trimmed = apiKey.trim();
+  if (!trimmed) return "";
+  if (trimmed.length <= 12) {
+    return trimmed;
+  }
+  const prefix = trimmed.slice(0, 6);
+  const suffix = trimmed.slice(-4);
+  return `${prefix}...${suffix}`;
+}
+
+function recordAssetDetection(entry, detection) {
+  try {
+    const projectSource = detection?.supabaseUrl || entry?.supabaseUrl || entry?.url || detection?.assetUrl || "";
+    const projectId = extractProjectId(projectSource);
+    if (!projectId) {
+      return;
+    }
+    const snippet = summarizeApiKeySnippet(detection?.apiKey);
+    if (!snippet) {
+      return;
+    }
+    const payload = {
+      projectId,
+      supabaseUrl: detection?.supabaseUrl || entry?.supabaseUrl || "",
+      assetUrl: detection?.assetUrl || entry?.assetUrl || "",
+      keyType: detection?.keyType || entry?.keyType || "",
+      keyLabel: detection?.keyLabel || entry?.keyLabel || "",
+      apiKeySnippet: snippet,
+      detectedAt: new Date().toISOString(),
+    };
+    chrome.runtime.sendMessage({ type: ASSET_DETECTION_RECORD_MESSAGE, payload }, () => {});
+  } catch (error) {
+    console.warn("SBDE failed to persist asset detection", error);
   }
 }
 

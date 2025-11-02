@@ -42,7 +42,7 @@
   max-width: 900px;
   margin: 0 auto;
   background: #ffffff;
-  padding: 32px;
+  padding: 20px;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
@@ -200,6 +200,20 @@
 .findings-table {
   width: 100%;
   border-collapse: collapse;
+}
+
+.findings-table.asset-table {
+  table-layout: fixed;
+}
+
+.findings-table.asset-table th,
+.findings-table.asset-table td {
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+.findings-table.asset-table td {
+  max-width: 0;
 }
 
 .findings-table thead {

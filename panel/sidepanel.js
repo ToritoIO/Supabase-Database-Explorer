@@ -5,6 +5,15 @@ const storageKeys = {
   connectionMeta: "sbde_connection_meta",
 };
 
+const ASSET_DETECTIONS_KEY = "sbde_asset_detections";
+
+const RISK_LEVEL_ORDER = {
+  low: 0,
+  medium: 1,
+  high: 2,
+  critical: 3,
+};
+
 const state = {
   connection: {
     projectId: "",
@@ -53,8 +62,6 @@ const sensitiveColumnIndicators = [
   "auth",
   "metadata",
 ];
-
-const REPORT_VERSION = "2025-11-01";
 
 function sanitize(value) {
   return (value || "").trim();
@@ -149,6 +156,42 @@ async function storageRemove(key) {
   return new Promise((resolve) => {
     chrome.storage.local.remove(key, resolve);
   });
+}
+
+function elevateRiskLevel(current, next) {
+  const currentRank = RISK_LEVEL_ORDER[current] ?? 0;
+  const nextRank = RISK_LEVEL_ORDER[next] ?? 0;
+  return nextRank > currentRank ? next : current;
+}
+
+async function loadAssetDetectionsForProject(projectId) {
+  if (!projectId) {
+    return [];
+  }
+  const stored = await storageGet(ASSET_DETECTIONS_KEY);
+  const map = stored?.[ASSET_DETECTIONS_KEY];
+  if (!map || typeof map !== "object") {
+    return [];
+  }
+  const entries = Array.isArray(map[projectId]) ? map[projectId] : [];
+  if (!entries.length) {
+    return [];
+  }
+
+  return entries
+    .map((entry) => ({
+      supabaseUrl: typeof entry?.supabaseUrl === "string" ? entry.supabaseUrl : "",
+      assetUrl: typeof entry?.assetUrl === "string" ? entry.assetUrl : "",
+      keyType: typeof entry?.keyType === "string" ? entry.keyType : "",
+      keyLabel: typeof entry?.keyLabel === "string" ? entry.keyLabel : "",
+      apiKeySnippet: typeof entry?.apiKeySnippet === "string" ? entry.apiKeySnippet : "",
+      detectedAt: typeof entry?.detectedAt === "string" ? entry.detectedAt : "",
+    }))
+    .sort((a, b) => {
+      const aTime = new Date(a.detectedAt || 0).getTime();
+      const bTime = new Date(b.detectedAt || 0).getTime();
+      return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+    });
 }
 
 async function fetchOpenApi() {
@@ -677,6 +720,8 @@ async function buildSecurityReport() {
   const keyRole = inferRoleFromClaims(apiKeyClaims);
   const bearerRole = inferRoleFromClaims(bearerClaims);
 
+  const assetDetections = await loadAssetDetectionsForProject(state.connection.projectId);
+
   const findings = [];
   for (const table of state.tables) {
     // eslint-disable-next-line no-await-in-loop
@@ -692,12 +737,22 @@ async function buildSecurityReport() {
   let riskLevel = "low";
   const keyFindings = [];
 
+  if (assetDetections.length) {
+    const serviceExposure = assetDetections.some((item) => /service/i.test(item.keyType || "") || /service_role/i.test(item.keyLabel || ""));
+    riskLevel = elevateRiskLevel(riskLevel, serviceExposure ? "critical" : "high");
+    const summaryLabel = assetDetections.length === 1
+      ? "1 exposed Supabase credential discovered in static assets."
+      : `${assetDetections.length} exposed Supabase credentials discovered in static assets.`;
+    keyFindings.push(summaryLabel);
+  }
+
   if (accessibleTables.length) {
-    riskLevel = keyRole === "anon" || bearerRole === "anon" ? "critical" : "high";
+    const accessRisk = keyRole === "anon" || bearerRole === "anon" ? "critical" : "high";
+    riskLevel = elevateRiskLevel(riskLevel, accessRisk);
     keyFindings.push(`${accessibleTables.length} table${accessibleTables.length === 1 ? "" : "s"} respond with data using the current credentials.`);
   }
   if (!accessibleTables.length && unknownTables.length) {
-    riskLevel = "medium";
+    riskLevel = elevateRiskLevel(riskLevel, "medium");
     keyFindings.push(`${unknownTables.length} table${unknownTables.length === 1 ? "" : "s"} returned non-auth errors that need manual review.`);
   }
   if (!keyFindings.length && protectedTables.length) {
@@ -717,7 +772,6 @@ async function buildSecurityReport() {
     projectId: state.connection.projectId,
     schema: state.connection.schema,
     baseUrl: state.baseUrl,
-    reportVersion: REPORT_VERSION,
     connectionSummary: {
       apiKeyRole: keyRole || null,
       bearerRole: bearerRole || null,
@@ -734,6 +788,7 @@ async function buildSecurityReport() {
       keyFindings,
     },
     findings,
+    assetDetections,
     recommendations,
   };
 }

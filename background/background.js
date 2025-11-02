@@ -5,6 +5,9 @@ const PANEL_OPEN_COOLDOWN_MS = 5000;
 const REPORT_STORAGE_KEY = "sbde_security_reports";
 const REPORT_MAX_ENTRIES = 10;
 const REPORT_TTL_MS = 1000 * 60 * 60 * 24;
+const ASSET_DETECTIONS_KEY = "sbde_asset_detections";
+const ASSET_DETECTIONS_MAX_PER_PROJECT = 25;
+const ASSET_DETECTION_TTL_MS = 1000 * 60 * 60 * 24;
 
 const tabDetectionCache = new Map();
 const panelOpenTimestamps = new Map();
@@ -126,6 +129,70 @@ async function createSecurityReportTab(report) {
   const url = chrome.runtime.getURL(`report/report.html?id=${encodeURIComponent(saved.id)}`);
   await chrome.tabs.create({ url });
   return saved.id;
+}
+
+function normalizeAssetDetection(summary) {
+  if (!summary || typeof summary !== "object") {
+    throw new Error("Invalid asset detection payload.");
+  }
+  const projectId = typeof summary.projectId === "string" ? summary.projectId.trim() : "";
+  if (!projectId) {
+    throw new Error("Asset detection payload missing project id.");
+  }
+
+  const detectedAt = typeof summary.detectedAt === "string" ? summary.detectedAt : new Date().toISOString();
+  const supabaseUrl = typeof summary.supabaseUrl === "string" ? summary.supabaseUrl : "";
+  const assetUrl = typeof summary.assetUrl === "string" ? summary.assetUrl : "";
+  const keyType = typeof summary.keyType === "string" ? summary.keyType : "";
+  const keyLabel = typeof summary.keyLabel === "string" ? summary.keyLabel : "";
+  const apiKeySnippet = typeof summary.apiKeySnippet === "string" ? summary.apiKeySnippet : "";
+
+  return {
+    projectId,
+    supabaseUrl,
+    assetUrl,
+    keyType,
+    keyLabel,
+    apiKeySnippet,
+    detectedAt,
+  };
+}
+
+async function recordAssetDetectionSummary(summary) {
+  const normalized = normalizeAssetDetection(summary);
+  const stored = await chrome.storage.local.get([ASSET_DETECTIONS_KEY]);
+  const current = stored?.[ASSET_DETECTIONS_KEY];
+  const map = current && typeof current === "object" ? { ...current } : {};
+  const now = Date.now();
+
+  const existing = Array.isArray(map[normalized.projectId]) ? map[normalized.projectId] : [];
+  const filtered = existing.filter((item) => {
+    if (!item || typeof item !== "object") return false;
+    const age = now - new Date(item.detectedAt || 0).getTime();
+    if (Number.isFinite(age) && age > ASSET_DETECTION_TTL_MS) {
+      return false;
+    }
+    const sameAsset = item.assetUrl === normalized.assetUrl && item.apiKeySnippet === normalized.apiKeySnippet;
+    return !sameAsset;
+  });
+
+  filtered.unshift({
+    supabaseUrl: normalized.supabaseUrl,
+    assetUrl: normalized.assetUrl,
+    keyType: normalized.keyType,
+    keyLabel: normalized.keyLabel,
+    apiKeySnippet: normalized.apiKeySnippet,
+    detectedAt: normalized.detectedAt,
+  });
+
+  if (filtered.length > ASSET_DETECTIONS_MAX_PER_PROJECT) {
+    filtered.length = ASSET_DETECTIONS_MAX_PER_PROJECT;
+  }
+
+  map[normalized.projectId] = filtered;
+  await chrome.storage.local.set({ [ASSET_DETECTIONS_KEY]: map });
+
+  return normalized;
 }
 
 async function handleSupabaseDetection({ tabId, url, apiKey, schema }) {
@@ -318,6 +385,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })
       .then(() => sendResponse?.({ ok: true }))
       .catch((error) => sendResponse?.({ ok: false, reason: error?.message || "Detection failed." }));
+    return true;
+  }
+
+  if (message?.type === "SBDE_REGISTER_ASSET_DETECTION" && message?.payload) {
+    recordAssetDetectionSummary(message.payload)
+      .then(() => sendResponse?.({ ok: true }))
+      .catch((error) => sendResponse?.({ ok: false, reason: error instanceof Error ? error.message : String(error || "Failed to persist detection.") }));
     return true;
   }
 

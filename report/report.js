@@ -63,13 +63,10 @@ function renderMeta(report) {
     },
   ];
 
-  if (report.connectionSummary?.apiKeyRole) {
-    items.push({ label: "API key role", value: report.connectionSummary.apiKeyRole });
-  }
   if (
     report.connectionSummary?.usesDistinctBearer &&
     report.connectionSummary?.bearerRole &&
-    report.connectionSummary.bearerRole !== report.connectionSummary.apiKeyRole
+    report.connectionSummary?.bearerRole !== report.connectionSummary?.apiKeyRole
   ) {
     items.push({ label: "Bearer role", value: report.connectionSummary.bearerRole });
   }
@@ -84,7 +81,7 @@ function renderMeta(report) {
   });
 
   if (dom.version) {
-    dom.version.textContent = `Report version ${report.reportVersion || "n/a"}`;
+    dom.version.textContent = "";
   }
 }
 
@@ -126,6 +123,10 @@ function createSummarySection(report) {
     { label: "Protected tables", value: formatCount(report.summary?.protectedCount) },
     { label: "Unknown state", value: formatCount(report.summary?.unknownCount) },
   ];
+
+  if (Array.isArray(report.assetDetections) && report.assetDetections.length) {
+    stats.push({ label: "Static asset exposures", value: formatCount(report.assetDetections.length) });
+  }
 
   stats.forEach((stat) => {
     const card = document.createElement("div");
@@ -227,6 +228,64 @@ function createFindingsSection(report) {
   return section;
 }
 
+function createAssetDetectionsSection(report) {
+  const detections = Array.isArray(report.assetDetections) ? report.assetDetections : [];
+  if (!detections.length) {
+    return null;
+  }
+
+  const section = document.createElement("section");
+  section.className = "report-section";
+
+  const title = document.createElement("h2");
+  title.textContent = "Static Asset Exposures";
+  section.appendChild(title);
+
+  const intro = document.createElement("p");
+  intro.textContent = "While DevTools was open, the extension detected Supabase credentials embedded in static assets. Review and rotate these credentials immediately.";
+  section.appendChild(intro);
+
+  const table = document.createElement("table");
+  table.className = "findings-table asset-table";
+
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  ["Detected", "Supabase URL", "Asset URL", "Key snippet"].forEach((label) => {
+    const th = document.createElement("th");
+    th.textContent = label;
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  detections.forEach((detection) => {
+    const tr = document.createElement("tr");
+
+    const detectedCell = document.createElement("td");
+    detectedCell.textContent = formatDate(detection.detectedAt).split(",")[0] || formatDate(detection.detectedAt);
+    tr.appendChild(detectedCell);
+
+    const supabaseCell = document.createElement("td");
+    supabaseCell.textContent = detection.supabaseUrl || "—";
+    tr.appendChild(supabaseCell);
+
+    const assetCell = document.createElement("td");
+    assetCell.textContent = detection.assetUrl || "—";
+    tr.appendChild(assetCell);
+
+    const snippetCell = document.createElement("td");
+    snippetCell.textContent = detection.apiKeySnippet || "—";
+    tr.appendChild(snippetCell);
+
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  section.appendChild(table);
+  return section;
+}
+
 function createRecommendationsSection(report) {
   const section = document.createElement("section");
   section.className = "report-section";
@@ -273,6 +332,10 @@ function renderReport(report) {
   dom.root.innerHTML = "";
   renderMeta(report);
   dom.root.appendChild(createSummarySection(report));
+  const assetsSection = createAssetDetectionsSection(report);
+  if (assetsSection) {
+    dom.root.appendChild(assetsSection);
+  }
   dom.root.appendChild(createFindingsSection(report));
   dom.root.appendChild(createRecommendationsSection(report));
 }
