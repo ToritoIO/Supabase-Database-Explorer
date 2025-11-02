@@ -655,7 +655,7 @@ async function analyzeTableSecurity(table) {
   };
 }
 
-function buildSecurityRecommendations({ accessibleTables, sensitiveTables, keyRole, bearerRole }) {
+function buildSecurityRecommendations({ accessibleTables, sensitiveTables, assetDetections, keyRole, bearerRole }) {
   const recommendations = [];
   const exposedNames = formatList(accessibleTables.map((item) => item.name));
   const sensitiveNames = formatList(sensitiveTables.map((item) => item.name));
@@ -663,6 +663,10 @@ function buildSecurityRecommendations({ accessibleTables, sensitiveTables, keyRo
     new Set(sensitiveTables.flatMap((item) => item.sensitiveColumns || []))
   );
   const sensitiveColumnsPreview = formatList(sensitiveColumnsCombined);
+  const assetExposureCount = Array.isArray(assetDetections) ? assetDetections.length : 0;
+  const hasServiceAsset = Array.isArray(assetDetections)
+    ? assetDetections.some((item) => /service/i.test(item.keyType || "") || /service_role/i.test(item.keyLabel || ""))
+    : false;
 
   if (accessibleTables.length) {
     recommendations.push({
@@ -688,6 +692,15 @@ function buildSecurityRecommendations({ accessibleTables, sensitiveTables, keyRo
       title: "Remove service_role keys from client-side contexts",
       detail: "Service role keys bypass RLS entirely. Rotate this key and move privileged operations to secure backend services.",
       severity: "critical",
+    });
+  }
+
+  if (assetExposureCount) {
+    recommendations.push({
+      id: "static-assets",
+      title: "Purge Supabase credentials from static assets",
+      detail: `${assetExposureCount} exposed credential${assetExposureCount === 1 ? " was" : "s were"} discovered in static files while DevTools was open. Rotate the affected key${assetExposureCount === 1 ? "" : "s"} immediately, remove them from bundles, and load configuration from server-side storage instead of shipping secrets to the client.`,
+      severity: hasServiceAsset ? "critical" : "high",
     });
   }
 
@@ -762,6 +775,7 @@ async function buildSecurityReport() {
   const recommendations = buildSecurityRecommendations({
     accessibleTables,
     sensitiveTables,
+    assetDetections,
     keyRole,
     bearerRole,
   });
