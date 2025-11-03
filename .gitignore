@@ -2,3 +2,5 @@
 extension_description.txt
 store/
 landing/
+LEAK_SCANNER_IMPROVEMENTS.md
+shared/test_leak_scanner.html

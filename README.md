@@ -56,8 +56,14 @@ Click on the image to watch the video on YouTube.
 ### API Key Leak Detection
 - **Real-time scanning** of network responses (scripts, HTML, JSON) for exposed API keys from 30+ popular services.
 - **Pattern recognition** for AWS Access Keys, Stripe API keys, OpenAI tokens, GitHub Personal Access Tokens, SendGrid, Twilio, Slack, and many more.
+- **Smart filtering** reduces false positives:
+  - Automatically excludes CSS/font files by default
+  - Detects and skips base64-encoded font/image data URIs
+  - Uses entropy analysis to filter out repetitive patterns (e.g., "AAAAAAA...")
+  - Maintains a deny list of known false positives
 - **Detailed leak reports** in the DevTools panel including the matched value, pattern type, context, and source location.
 - **Automated scanning** while DevTools is open, catching leaks as pages load.
+- **Customizable** scanning with options to adjust file exclusions, entropy thresholds, and pattern groups.
 
 ## How It Works End-to-End
 
@@ -85,7 +91,17 @@ As your browser loads pages with the DevTools panel open, SupaExplorer's scanner
 **DevTools scanning.** With the SupaExplorer DevTools panel open, network traffic is automatically scanned for exposed API keys—no configuration needed.  
 **Leak log.** Switch to the "Leaks" tab in the DevTools panel to see all detected leaks with matched values, pattern types, context snippets, and source URLs.  
 **Pattern library.** The scanner recognizes 30+ API key patterns including AWS, Stripe, OpenAI, GitHub, Google Cloud, Azure, SendGrid, Twilio, Slack, and more.  
-**Automatic deduplication.** Identical leaks from the same source are shown only once to reduce noise.
+**False positive filtering.** The scanner intelligently filters common false positives:
+  - CSS/SCSS/font files are excluded by default
+  - Base64-encoded fonts and images in data URIs are skipped
+  - Low-entropy patterns (repetitive characters) are filtered out
+  - Known false positives are maintained in a deny list  
+**Automatic deduplication.** Identical leaks from the same source are shown only once to reduce noise.  
+**Customization.** Advanced users can customize the scanner behavior via `createLeakScanner()` options in `shared/leak_scanner.js`:
+  - `excludedExtensions`: Array of file extensions to skip (default: `.css`, `.scss`, `.sass`, `.less`, `.woff`, `.woff2`, `.ttf`, `.eot`, `.otf`)
+  - `minEntropy`: Minimum Shannon entropy for AWS keys (default: `3.0`)
+  - `includeEncoded`: Whether to scan base64-decoded content (default: `true`)
+  - `denyList`: Custom list of known false positives to ignore
 
 ## Development Notes
 The extension is written against Manifest V3. Key entry points live in `background/background.js` (service worker), `content/detector*.js` (request instrumentation), `panel/sidepanel.*` (Chrome side panel UI), `explorer/explorer.*` (modal explorer), `devtools/devtools_*` (DevTools integration), and `shared/leak_scanner.js` (API key pattern matching). Assets in `assets/` and `panel/` supply icons plus the SupaExplorer branding.

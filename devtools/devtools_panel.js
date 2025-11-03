@@ -315,7 +315,8 @@ function scanRequestForEmbeddedCredentials(request) {
         supabaseDetections.forEach((detection) => handleStaticDetection(request, detection));
       }
 
-      const leakDetections = leakScanner.scan(source);
+      const requestURL = request?.request?.url || "";
+      const leakDetections = leakScanner.scan(source, requestURL);
       if (leakDetections.length) {
         handleLeakDetections(request, leakDetections);
       }
