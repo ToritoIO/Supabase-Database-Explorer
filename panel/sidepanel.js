@@ -43,6 +43,7 @@ const state = {
   isGeneratingReport: false,
   termsAccepted: false,
   hasBootstrappedAfterTerms: false,
+  isShareReportOpen: false,
 };
 
 const dom = {
@@ -59,6 +60,11 @@ const dom = {
   connectionStatus: document.getElementById("connection-status"),
   themeToggle: document.getElementById("theme-toggle"),
   themeIcon: document.querySelector(".theme-icon"),
+  shareReportModal: document.getElementById("share-report-modal"),
+  shareReportBackdrop: document.getElementById("share-report-backdrop"),
+  shareReportCloseBtn: document.getElementById("share-report-close-btn"),
+  shareReportViewBtn: document.getElementById("share-report-view-btn"),
+  shareReportShareBtn: document.getElementById("share-report-share-btn"),
   termsModal: document.getElementById("terms-modal"),
   termsBackdrop: document.getElementById("terms-backdrop"),
   termsBody: document.querySelector(".terms-body"),
@@ -618,19 +624,71 @@ function sendMessageAsync(message) {
 
 function updateReportButtonState({ busy = false } = {}) {
   if (!dom.reportBtn) return;
-  if (busy || state.isGeneratingReport) {
+  const isBusy = busy || state.isGeneratingReport;
+  if (isBusy) {
     dom.reportBtn.disabled = true;
     dom.reportBtn.classList.add("is-busy");
+  } else {
+    dom.reportBtn.classList.remove("is-busy");
+    if (!state.termsAccepted) {
+      dom.reportBtn.disabled = true;
+    } else {
+      const hasTables = Array.isArray(state.tables) && state.tables.length > 0;
+      const shouldDisable = !(hasTables || hasDetectionFindings());
+      dom.reportBtn.disabled = shouldDisable;
+    }
+  }
+
+  if (dom.shareReportViewBtn) {
+    const shouldDisableView = dom.reportBtn.disabled || isBusy;
+    dom.shareReportViewBtn.disabled = shouldDisableView;
+    dom.shareReportViewBtn.classList.toggle("is-busy", isBusy);
+  }
+}
+
+function toggleShareReportModal(visible) {
+  if (!dom.shareReportModal) return;
+  state.isShareReportOpen = Boolean(visible);
+  dom.shareReportModal.classList.toggle("hidden", !visible);
+  document.body?.classList.toggle("share-report-locked", Boolean(visible));
+  if (visible) {
+    dom.shareReportViewBtn?.focus();
+  }
+}
+
+function openShareReportModal(event) {
+  event?.preventDefault();
+  if (!enforceTermsAccess({ showModal: true })) {
     return;
   }
-  dom.reportBtn.classList.remove("is-busy");
-  if (!state.termsAccepted) {
-    dom.reportBtn.disabled = true;
+  if (dom.reportBtn?.disabled) {
     return;
   }
-  const hasTables = Array.isArray(state.tables) && state.tables.length > 0;
-  const shouldDisable = !(hasTables || hasDetectionFindings());
-  dom.reportBtn.disabled = shouldDisable;
+  toggleShareReportModal(true);
+}
+
+function closeShareReportModal(event) {
+  event?.preventDefault?.();
+  if (!state.isShareReportOpen) {
+    return;
+  }
+  toggleShareReportModal(false);
+}
+
+function handleShareReportKeydown(event) {
+  if (event.key === "Escape" && state.isShareReportOpen) {
+    event.preventDefault();
+    toggleShareReportModal(false);
+  }
+}
+
+async function handleShareReportView(event) {
+  event?.preventDefault?.();
+  if (dom.shareReportViewBtn?.disabled) {
+    return;
+  }
+  closeShareReportModal();
+  await handleGenerateReport();
 }
 
 function generateLocalId(prefix = "id") {
@@ -1514,15 +1572,28 @@ function initEventListeners() {
   dom.tablesList.addEventListener("click", handleTableClick);
   dom.tablesList.addEventListener("dblclick", handleTableDoubleClick);
   dom.clearStorageBtn.addEventListener("click", clearSavedConnection);
-  if (dom.reportBtn) {
-    dom.reportBtn.addEventListener("click", handleGenerateReport);
-  }
   if (dom.themeToggle) {
     dom.themeToggle.addEventListener("click", () => {
       const next = state.theme === "dark" ? "light" : "dark";
       setTheme(next);
     });
   }
+}
+
+function initShareReportUi() {
+  if (dom.reportBtn) {
+    dom.reportBtn.addEventListener("click", openShareReportModal);
+  }
+  if (dom.shareReportCloseBtn) {
+    dom.shareReportCloseBtn.addEventListener("click", closeShareReportModal);
+  }
+  if (dom.shareReportBackdrop) {
+    dom.shareReportBackdrop.addEventListener("click", closeShareReportModal);
+  }
+  if (dom.shareReportViewBtn) {
+    dom.shareReportViewBtn.addEventListener("click", handleShareReportView);
+  }
+  document.addEventListener("keydown", handleShareReportKeydown);
 }
 
 function registerGlobalListeners() {
@@ -1633,6 +1704,7 @@ async function init() {
   renderTablesList();
   initTermsUi();
   initEventListeners();
+  initShareReportUi();
   registerGlobalListeners();
   await ensureTermsAccepted({ enforce: true });
   await bootstrapAfterTerms();

@@ -79,7 +79,7 @@
         <div class="section-header">
           <h2>Tables / Views</h2>
           <div class="header-actions">
-            <button id="report-btn" type="button" class="primary">Share Report</button>
+            <button id="report-btn" type="button" class="primary">Generate Security Report</button>
             <button id="reload-btn" type="button">Reload</button>
           </div>
         </div>
@@ -112,6 +112,25 @@
         <button type="button" class="link-button" id="terms-withdraw-btn">Withdraw consent</button>
       </div>
     </footer>
+
+    <div class="share-report-modal hidden" id="share-report-modal" role="dialog" aria-modal="true" aria-labelledby="share-report-title">
+      <div class="share-report-backdrop" id="share-report-backdrop" tabindex="-1"></div>
+      <div class="share-report-container" role="document">
+        <header class="share-report-header">
+          <div>
+            <p class="share-report-eyebrow">Security report</p>
+            <h2 id="share-report-title">What would you like to do?</h2>
+            <p class="share-report-description">Generate a fresh local report now or get ready to share it once available.</p>
+          </div>
+          <button type="button" class="share-report-close" id="share-report-close-btn" aria-label="Close share report options">&times;</button>
+        </header>
+        <div class="share-report-actions">
+          <button type="button" class="primary" id="share-report-view-btn">View Report</button>
+          <button type="button" class="secondary" id="share-report-share-btn" disabled title="Sharing is coming soon">Share Report</button>
+        </div>
+        <p class="share-report-note">Secure sharing is coming soon. For now you can open the report locally.</p>
+      </div>
+    </div>
 
     <div class="terms-modal hidden" id="terms-modal" role="dialog" aria-modal="true" aria-labelledby="terms-title">
       <div class="terms-backdrop" id="terms-backdrop" tabindex="-1"></div>
