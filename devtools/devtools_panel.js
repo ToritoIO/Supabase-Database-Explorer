@@ -280,6 +280,7 @@ function deriveConnectionPayload(entry) {
     schema,
     apiKey,
     bearer,
+    inspectedHost: pageScope.hostname || "",
   };
 }
 

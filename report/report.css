@@ -142,23 +142,23 @@
 }
 
 .risk-badge[data-level="critical"] {
-  background: rgba(239, 68, 68, 0.2);
+  background: #fde2e2;
   color: #b01d1d;
 }
 
 .risk-badge[data-level="high"] {
-  background: rgba(249, 115, 22, 0.2);
-  color: #fdba74;
+  background: #ffe9d9;
+  color: #c2410c;
 }
 
 .risk-badge[data-level="medium"] {
-  background: rgba(250, 204, 21, 0.2);
-  color: #aa8a08;
+  background: #fff4e5;
+  color: #b45309;
 }
 
 .risk-badge[data-level="low"] {
-  background: rgba(34, 197, 94, 0.2);
-  color: #0b692c;
+  background: #e7f8ef;
+  color: #0f5132;
 }
 
 .key-findings {
@@ -222,7 +222,7 @@
 
 .findings-table th,
 .findings-table td {
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: top;
@@ -247,12 +247,87 @@
   font-size: 0.75rem;
 }
 
+.finding-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.2;
+}
+
+.finding-status__label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
 .finding-status[data-state="likely-unprotected"] {
   color: #b01d1d;
 }
 
 .finding-status[data-state="protected"] {
   color: #228e4a;
+}
+
+.finding-status[data-risk="low"] {
+  color: #0f5132; /* deep green */
+}
+
+.finding-status[data-risk="medium"] {
+  color: #b45309; /* amber */
+}
+
+.finding-status[data-risk="high"] {
+  color: #c2410c; /* deep orange */
+}
+
+.finding-status[data-risk="critical"] {
+  color: #b01d1d; /* red */
+}
+
+.risk-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  line-height: 1;
+  min-width: 0;
+  width: fit-content;
+  justify-content: center;
+  align-self: flex-start;
+}
+
+.risk-chip[data-level="low"] {
+  background: #e7f8ef;
+  color: #0f5132;
+}
+
+.risk-chip[data-level="medium"] {
+  background: #fff4e5;
+  color: #b45309;
+}
+
+.risk-chip[data-level="high"] {
+  background: #ffe9d9;
+  color: #c2410c;
+}
+
+.risk-chip[data-level="critical"] {
+  background: #fde2e2;
+  color: #b01d1d;
+}
+
+.finding-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.finding-name__title {
+  font-weight: 600;
 }
 
 .finding-list {

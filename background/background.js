@@ -65,6 +65,27 @@ const cleanApiKey = (raw) => {
   return trimmed.startsWith("Bearer ") ? trimmed.slice(7).trim() : trimmed;
 };
 
+function resolveTabHostname(tabId) {
+  return new Promise((resolve) => {
+    if (tabId === undefined || tabId < 0 || !chrome.tabs?.get) {
+      resolve(null);
+      return;
+    }
+    chrome.tabs.get(tabId, (tab) => {
+      if (chrome.runtime.lastError || !tab?.url) {
+        resolve(null);
+        return;
+      }
+      try {
+        const { hostname } = new URL(tab.url);
+        resolve(hostname || null);
+      } catch (error) {
+        resolve(null);
+      }
+    });
+  });
+}
+
 const extractProjectIdFromUrl = (url) => {
   if (!url) return null;
   try {
@@ -311,6 +332,7 @@ async function recordLeakDetectionSummary(summary) {
   });
 
   filtered.unshift({
+    host: normalized.host,
     sourceUrl: normalized.sourceUrl,
     assetUrl: normalized.assetUrl,
     pattern: normalized.pattern,
@@ -362,18 +384,22 @@ async function handleSupabaseDetection({ tabId, url, apiKey, schema }) {
   const stored = await chrome.storage.local.get([CONNECTION_STORAGE_KEY]);
   const current = stored?.[CONNECTION_STORAGE_KEY];
 
+  const inspectedHost = await resolveTabHostname(tabId);
+
   const connection = {
     projectId,
     schema: normalizedSchema,
     apiKey: cleanKey,
     bearer: cleanKey,
+    inspectedHost: inspectedHost || "",
   };
 
   const isSameConnection =
     current &&
     current.projectId === connection.projectId &&
     current.apiKey === connection.apiKey &&
-    normalizeSchema(current.schema) === connection.schema;
+    normalizeSchema(current.schema) === connection.schema &&
+    (current.inspectedHost || "") === (connection.inspectedHost || "");
 
   const metaPayload = {
     source: DETECTOR_SOURCE,
@@ -556,6 +582,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       schema: message.payload.schema || "public",
       apiKey: message.payload.apiKey || "",
       bearer: message.payload.bearer || message.payload.apiKey || "",
+      inspectedHost: message.payload.inspectedHost || "",
     };
 
     chrome.storage.local.set({
@@ -627,10 +654,11 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
   ["requestHeaders", "extraHeaders"]
 );
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  const url = changeInfo?.url || tab?.url;
-  if (!url) return;
-  if (isSupabaseUrl(url)) {
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (!changeInfo || typeof changeInfo.url !== "string") {
+    return;
+  }
+  if (isSupabaseUrl(changeInfo.url)) {
     return;
   }
   clearTabDetection(tabId).catch(() => {});

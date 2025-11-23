@@ -110,6 +110,13 @@ As your browser loads pages with the DevTools panel open, SupaExplorer's scanner
   - `includeEncoded`: Whether to scan base64-decoded content (default: `true`)
   - `denyList`: Custom list of known false positives to ignore
 
+### Linking the extension to SupaExplorer Cloud
+- **Status button.** The cloud icon in the side panel header now opens a modal that shows whether this browser is linked to SupaExplorer Cloud.  
+- **Connect flow.** Click **Connect** to create a one-time link request; the extension opens the Cloud console at `/extension/link/<code>`. After signing in, review the pending request and approve it to claim the seat.  
+- **One seat per user.** Each Cloud user can link exactly one extension installation. Approving a new request revokes any previously linked device automatically so team seats stay accurate.  
+- **Manage/disconnect.** Use the new **Cloud Link** entry in the Cloud navigation menu to view the current installation, revoke it, or approve pending requests that were launched from the extension. Disconnecting from Cloud can also be done directly inside the extension’s modal.  
+- **Share reports.** Once linked, the **Share to Cloud** button in the extension’s Share Report modal uploads the latest findings straight into the SupaExplorer Cloud workspace, copies the secure share link to your clipboard, and records the inspected domain metadata for filtering later on.
+
 ## Development Notes
 The extension is written against Manifest V3. Key entry points live in `background/background.js` (service worker), `content/detector*.js` (request instrumentation), `panel/sidepanel.*` (Chrome side panel UI), `explorer/explorer.*` (modal explorer), `devtools/devtools_*` (DevTools integration), and `shared/leak_scanner.js` (API key pattern matching). Assets in `assets/` and `panel/` supply icons plus the SupaExplorer branding.
 

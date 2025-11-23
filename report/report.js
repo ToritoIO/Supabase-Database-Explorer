@@ -1,4 +1,6 @@
 const REPORT_STORAGE_KEY = "sbde_security_reports";
+const CLOUD_LINK_STORAGE_KEY = "sbde_cloud_link_state";
+const CLOUD_STATUS_LINKED = "linked";
 
 const dom = {
   root: document.getElementById("report-root"),
@@ -11,6 +13,25 @@ function storageGet(key) {
   return new Promise((resolve) => {
     chrome.storage.local.get(key, resolve);
   });
+}
+
+function setDownloadVisibility(isVisible) {
+  if (!dom.downloadBtn) return;
+  dom.downloadBtn.style.display = isVisible ? "inline-flex" : "none";
+}
+
+async function syncDownloadVisibility() {
+  if (!dom.downloadBtn || !chrome?.storage?.local?.get) {
+    setDownloadVisibility(false);
+    return;
+  }
+  try {
+    const stored = await storageGet([CLOUD_LINK_STORAGE_KEY]);
+    const link = stored?.[CLOUD_LINK_STORAGE_KEY];
+    setDownloadVisibility(link?.status === CLOUD_STATUS_LINKED);
+  } catch (error) {
+    setDownloadVisibility(false);
+  }
 }
 
 function formatDate(value) {
@@ -40,6 +61,14 @@ function createRiskBadge(level) {
   return badge;
 }
 
+function createRiskChip(level) {
+  const chip = document.createElement("span");
+  chip.className = "risk-chip";
+  chip.dataset.level = level || "unknown";
+  chip.textContent = (level || "unknown").toUpperCase();
+  return chip;
+}
+
 function describePolicyState(finding) {
   if (finding.policyState === "likely-unprotected") return "Likely unprotected";
   if (finding.policyState === "protected") return "Protected";
@@ -63,11 +92,13 @@ function renderMeta(report) {
     },
   ];
 
+  const domainValue = typeof report.domain === "string" ? report.domain.trim() : "";
   const inspectedHost = typeof report.inspectedHost === "string" ? report.inspectedHost.trim() : "";
-  if (inspectedHost) {
+  const domainLabel = domainValue || inspectedHost;
+  if (domainLabel) {
     items.splice(1, 0, {
       label: "Domain",
-      value: inspectedHost,
+      value: domainLabel,
     });
   }
 
@@ -160,15 +191,30 @@ function createFindingRow(finding) {
   const tr = document.createElement("tr");
 
   const nameCell = document.createElement("td");
-  nameCell.textContent = finding.name || "-";
+  const nameWrap = document.createElement("div");
+  nameWrap.className = "finding-name";
+
+  const nameTitle = document.createElement("div");
+  nameTitle.className = "finding-name__title";
+  nameTitle.textContent = finding.name || "-";
+  nameWrap.appendChild(nameTitle);
+
+  const riskChip = createRiskChip(finding.riskLevel || "unknown");
+  nameWrap.appendChild(riskChip);
+
+  nameCell.appendChild(nameWrap);
 
   const accessCell = document.createElement("td");
   const status = document.createElement("div");
   status.className = "finding-status";
   status.dataset.state = finding.policyState || "unknown";
+  status.dataset.risk = finding.riskLevel || "unknown";
 
-  const label = describePolicyState(finding);
-  status.textContent = finding.status ? `${label} (${finding.status})` : label;
+  const label = document.createElement("div");
+  label.className = "finding-status__label";
+  label.textContent = describePolicyState(finding);
+  status.appendChild(label);
+
   accessCell.appendChild(status);
 
   const rowsCell = document.createElement("td");
@@ -437,6 +483,20 @@ async function loadReport() {
 }
 
 loadReport();
+
+// Only paid (cloud-linked) users can access PDF download.
+setDownloadVisibility(false);
+syncDownloadVisibility();
+
+if (chrome?.storage?.onChanged?.addListener) {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local" || !changes[CLOUD_LINK_STORAGE_KEY]) {
+      return;
+    }
+    const nextLink = changes[CLOUD_LINK_STORAGE_KEY]?.newValue || null;
+    setDownloadVisibility(nextLink?.status === CLOUD_STATUS_LINKED);
+  });
+}
 
 if (dom.downloadBtn) {
   dom.downloadBtn.addEventListener("click", () => {

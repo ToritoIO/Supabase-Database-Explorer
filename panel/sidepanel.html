@@ -11,9 +11,10 @@
         <img src="supabase-database-explorer.svg" alt="Supabase Database Explorer logo" class="app-logo" />
         <h1>SupaExplorer</h1>
         <div class="header-actions">
-          <button id="status-check-btn" class="theme-toggle" type="button" aria-label="Open detections">
-            <span class="header-action-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><line x1="48" y1="40" x2="208" y2="216" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><path d="M193.89,200.49A79.66,79.66,0,0,1,160,208H72A56,56,0,1,1,85.92,97.74" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><path d="M112.63,63.52A80,80,0,0,1,219.68,181.28" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><path d="M80,128A79.68,79.68,0,0,1,91.07,87.37" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
+          <button id="status-check-btn" class="theme-toggle" type="button" aria-label="Cloud status">
+            <span class="header-action-icon status-check-icon" data-status="disconnected">
+              <svg class="status-icon-disconnected" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><line x1="48" y1="40" x2="208" y2="216" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><path d="M193.89,200.49A79.66,79.66,0,0,1,160,208H72A56,56,0,1,1,85.92,97.74" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><path d="M112.63,63.52A80,80,0,0,1,219.68,181.28" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><path d="M80,128A79.68,79.68,0,0,1,91.07,87.37" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
+              <svg class="status-icon-linked" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><path d="M80,128a80,80,0,1,1,80,80H72A56,56,0,1,1,85.92,97.74" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><polyline points="120 136 144 160 192 112" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
             </span>
           </button>
           <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
@@ -112,6 +113,71 @@
       </div>
     </footer>
 
+    <div class="link-modal hidden" id="link-modal" role="dialog" aria-modal="true" aria-labelledby="link-modal-title">
+      <div class="link-modal-backdrop" id="link-modal-backdrop" tabindex="-1"></div>
+      <div class="link-modal-container" role="document">
+        <header class="link-modal-header">
+          <div>
+            <p class="link-modal-eyebrow">Cloud sync</p>
+            <h2 id="link-modal-title">SupaExplorer Cloud link</h2>
+            <!-- p class="link-modal-description">
+              Tie this extension installation to your SupaExplorer Cloud seat to manage teams and billing centrally.
+            </p -->
+          </div>
+          <button type="button" class="link-modal-close" id="link-modal-close-btn" aria-label="Close status panel">&times;</button>
+        </header>
+        <div class="link-modal-body">
+          <div class="link-status-pill link-status-idle" id="link-status-pill">Status unknown</div>
+          <p class="link-status-message" id="link-status-message">
+            We’ll let you know once the extension reports its cloud status.
+          </p>
+          <dl class="link-status-meta hidden" id="link-status-meta">
+            <div>
+              <dt>Linked account</dt>
+              <dd id="link-status-account">—</dd>
+            </div>
+            <div>
+              <dt>Linked on</dt>
+              <dd id="link-status-linked-at">—</dd>
+            </div>
+            <div>
+              <dt>Extension ID</dt>
+              <dd id="link-status-instance">—</dd>
+            </div>
+          </dl>
+          <div class="link-team-picker" id="link-team-section">
+            <div class="link-team-header">
+              <div>
+                <p class="link-team-label">Team destination</p>
+                <p class="link-team-hint">Choose which team will receive cloud-shared reports.</p>
+              </div>
+              <button type="button" class="secondary link-team-refresh" id="link-team-refresh-btn" aria-label="Refresh teams list">
+                <span class="link-team-refresh-icon" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><polyline points="168 96 216 96 216 48" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><path d="M216,96,187.72,67.72A88,88,0,0,0,64,67" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><polyline points="88 160 40 160 40 208" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><path d="M40,160l28.28,28.28A88,88,0,0,0,192,189" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
+                </span>
+                <span>Update</span>
+              </button>
+            </div>
+            <label class="link-team-control" for="link-team-select">
+              <span class="link-team-control-label">Select team</span>
+              <select id="link-team-select" name="link-team-select">
+                <option value="">Link to SupaExplorer Cloud to load teams</option>
+              </select>
+            </label>
+            <p class="link-team-status" id="link-team-status">Select a team to decide where reports are stored.</p>
+          </div>
+        </div>
+        <div class="link-modal-actions">
+          <button type="button" class="primary" id="link-connect-btn">Connect</button>
+          <button type="button" class="secondary hidden" id="link-manage-btn">Manage in Cloud</button>
+          <button type="button" class="danger hidden" id="link-disconnect-btn">Disconnect</button>
+        </div>
+        <p class="link-modal-footnote">
+          Seats are enforced per user. Linking this device revokes any previous extension connected to the same account.
+        </p>
+      </div>
+    </div>
+
     <div class="share-report-modal hidden" id="share-report-modal" role="dialog" aria-modal="true" aria-labelledby="share-report-title">
       <div class="share-report-backdrop" id="share-report-backdrop" tabindex="-1"></div>
       <div class="share-report-container" role="document">
@@ -134,17 +200,32 @@
             </span>
             <span>View Report</span>
           </button>
-          <button type="button" class="secondary share-report-share" id="share-report-share-btn" disabled title="Sharing is coming soon">
+          <button type="button" class="secondary share-report-share" id="share-report-share-btn" aria-live="polite">
             <span class="share-report-action-icon" aria-hidden="true">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
                 <rect width="256" height="256" fill="none" />
                 <path d="M80,128a80,80,0,1,1,80,80H72A56,56,0,1,1,85.92,97.74" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
               </svg>
             </span>
-            <span>Share Report</span>
+            <span>Share to Cloud</span>
+          </button>
+          <button type="button" class="secondary share-report-connect hidden" id="share-report-connect-btn">
+            <span class="share-report-action-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+                <rect width="256" height="256" fill="none" />
+                <line x1="24" y1="128" x2="136" y2="128" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                <polyline points="96 88 136 128 96 168" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                <polyline points="136 40 200 40 200 216 136 216" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+              </svg>
+            </span>
+            <span>Connect to Cloud</span>
           </button>
         </div>
-        <p class="share-report-note">Secure sharing is coming soon. For now you can open the report locally.</p>
+        <p class="share-report-note" id="share-report-note">Link this extension to SupaExplorer Cloud to sync reports with your team.</p>
+        <div class="share-report-link hidden" id="share-report-link">
+          <span class="share-report-link-text" id="share-report-link-text"></span>
+          <button type="button" class="share-report-copy-btn" id="share-report-copy-btn">Click to copy</button>
+        </div>
       </div>
     </div>
 
